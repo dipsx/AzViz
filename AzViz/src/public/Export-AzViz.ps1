@@ -39,6 +39,10 @@ Controls how edges appear in visualization, default is 'spline' and other suppor
 String array of Azure resource types and providers to exclude from the visualization. 
 Can contain wild cards like: "Microsoft.Network*" or "*network*"
 
+.PARAMETER ExcludeName
+String array of Azure resource names to exclude from the visualization. 
+Can contain wild cards like: "resourse-name*" or "*resourse-name*"
+
 .EXAMPLE
 Visualizing a single resource group
 
@@ -143,9 +147,13 @@ function Export-AzViz {
         # [Parameter(ParameterSetName = 'FilePath')]
         # [Parameter(ParameterSetName = 'Url')]
         [ValidateNotNullOrEmpty()]
-        [string[]] $ExcludeTypes
-    )
+        [string[]] $ExcludeTypes,
 
+        # name of resources to be excluded in the visualization
+        [Parameter(ParameterSetName = 'AzLogin')]
+        [ValidateNotNullOrEmpty()]
+        [string[]] $ExcludeNames
+    )
 
     try {
 
@@ -246,6 +254,7 @@ function Export-AzViz {
         Write-CustomHost " Target Type            : $TargetType"-Indentation 1 -color Green
         Write-CustomHost " Output Format          : $OutputFormat"-Indentation 1 -color Green
         Write-CustomHost " Exluded Resource Types : $($ExcludeTypes.foreach({"`'$_`'"}))"-Indentation 1 -color Green
+        Write-CustomHost " Exluded Resource Names : $($ExcludeNames.foreach({"`'$_`'"}))"-Indentation 1 -color Green
         Write-CustomHost " Output File Path       : $OutputFilePath"-Indentation 1 -color Green
         Write-CustomHost " Label Verbosity        : $LabelVerbosity"-Indentation 1 -color Green
         Write-CustomHost " Category Depth         : $CategoryDepth"-Indentation 1 -color Green
@@ -266,7 +275,7 @@ function Export-AzViz {
         #region graph-generation
         Write-CustomHost "Starting to generate Azure visualization..." -Indentation 0 -color Magenta -AddTime
     
-        $graph = ConvertTo-DOTLanguage -TargetType $TargetType -Targets $Targets -CategoryDepth $CategoryDepth -LabelVerbosity $LabelVerbosity -Splines $Splines -ExcludeTypes $ExcludeTypes
+        $graph = ConvertTo-DOTLanguage -TargetType $TargetType -Targets $Targets -CategoryDepth $CategoryDepth -LabelVerbosity $LabelVerbosity -Splines $Splines -ExcludeTypes $ExcludeTypes -ExcludeNames $ExcludeNames
 
         if ($graph) {
             @"

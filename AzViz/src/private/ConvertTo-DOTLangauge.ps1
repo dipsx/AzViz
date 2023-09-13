@@ -8,7 +8,8 @@ function ConvertTo-DOTLanguage {
         [int] $CategoryDepth = 1,
         [string] $Direction = 'top-to-bottom',
         [string] $Splines = 'spline',
-        [string[]] $ExcludeTypes
+        [string[]] $ExcludeTypes,
+        [string[]] $ExcludeNames
     )
     
     begin {
@@ -48,6 +49,17 @@ function ConvertTo-DOTLanguage {
             Write-CustomHost "Plotting sub-graph for $($Target.Type): `"$($Target.Name)`"" -Indentation 1 -color Green -AddTime
 
             $VNets = Get-AzVirtualNetwork -ResourceGroupName $Target.Name -Verbose:$false
+            $VNets = $VNets | Where-Object {
+                foreach ($exclude in $ExcludeNames) {
+                    if ($_.Name -like $exclude) {
+                        Write-CustomHost "Excluding VNet: $($_.Name)" -color Green
+                        return $false
+                    }
+                }
+                return $true
+            }
+
+
             $NetworkLayout = @()
             if ($VNets) {
                 
@@ -57,6 +69,16 @@ function ConvertTo-DOTLanguage {
                 $NICs = Get-AzNetworkInterface -ResourceGroupName $Target.Name -Verbose:$false
                 $VMs_and_NICs += $VMs
                 $VMs_and_NICs += $NICs
+                
+                $VMs_and_NICs = $VMs_and_NICs | Where-Object {
+                    foreach ($exclude in $ExcludeNames) {
+                        if ($_.Name -like $exclude) {
+                            Write-CustomHost "Excluding VM or NIC: $($_.Name)" -color Green
+                            return $false
+                        }
+                    }
+                    return $true
+                }
                 
                 foreach ($vnet in $VNets) {
                     
@@ -130,6 +152,16 @@ function ConvertTo-DOTLanguage {
             #region plotting-edges-to-nodes
             $Resources = $Target.Resources
             if ($Resources) {
+                $Resources = $Resources | Where-Object {
+                    foreach ($exclude in $ExcludeNames) {
+                        if ($_.from -like $exclude -or $_.to -like $exclude) {
+                            Write-CustomHost "Excluding resource: from: $($_.from) -> to: $($_.to)" -color Green
+                            return $false
+                        }
+                    }
+                    return $true
+                }
+                
                 # $NodesAndEdges = $Resources |
                 $nodes = @()
                 $edges = @()
